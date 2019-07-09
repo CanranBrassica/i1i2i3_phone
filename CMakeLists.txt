@@ -7,6 +7,8 @@ set(CMAKE_CXX_STANDARD 17)
 
 set(CMAKE_CXX_FLAGS "-g3 -O0")
 
+include_directories("${CMAKE_CURRENT_LIST_DIR}/cereal/include")
+
 file(GLOB client_src ${CMAKE_CURRENT_LIST_DIR}/client/*.cpp)
 add_executable(client ${client_src})
 target_include_directories(client PRIVATE ${CMAKE_CURRENT_LIST_DIR}/common)
