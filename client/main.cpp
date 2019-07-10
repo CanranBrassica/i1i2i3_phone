@@ -71,6 +71,8 @@ int main(int argc, char* argv[])
                 send_message(IpPhone::Message::CreateRoom{.room_id = std::strtoul(argv[1].c_str(), nullptr, 0)});
             } else if (argv[0] == "/join_room") {
                 send_message(IpPhone::Message::JoinRoom{.room_id = std::strtoul(argv[1].c_str(), nullptr, 0)});
+            } else if (argv[0] == "/leave_room") {
+                send_message(IpPhone::Message::LeaveRoom{});
             } else {
                 std::cerr << "invalid command" << std::endl;
             }

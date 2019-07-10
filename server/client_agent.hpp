@@ -21,7 +21,8 @@ class ClientAgent : public std::enable_shared_from_this<ClientAgent>
     using tcp = asio::ip::tcp;
 
 public:
-    explicit ClientAgent(asio::io_context& io_context, std::shared_ptr<GateWay> gateway);
+    explicit ClientAgent(asio::io_context& io_context, GateWay& gateway);
+    ~ClientAgent() { close(); }
 
     void start_receive();
     bool is_valid() const { return id.has_value(); }
@@ -34,9 +35,9 @@ public:
     void async_send(TMessage&& msg);
 
     tcp::socket socket;
-    std::shared_ptr<GateWay> gateway;
+    GateWay& gateway;
     std::optional<size_t> id = std::nullopt;
-    std::shared_ptr<ChatRoom> joinning_room = nullptr;
+    std::weak_ptr<ChatRoom> joinning_room;
 
 private:
     asio::streambuf recv_buf;

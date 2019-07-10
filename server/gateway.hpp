@@ -27,7 +27,7 @@ public:
 
     void start_accept()
     {
-        client_list.emplace_back(std::make_shared<ClientAgent>(io_context, shared_from_this()));
+        client_list.emplace_back(std::make_shared<ClientAgent>(io_context, *this));
         acceptor.async_accept(client_list.back()->socket,
             [self = shared_from_this()](auto&&... args) {
                 self->on_accept(std::forward<decltype(args)>(args)...);

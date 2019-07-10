@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.0)
 project(i1i2i3_phone CXX)
 
 #set(CMAKE_CXX_COMPILER "/usr/bin/clang-7")

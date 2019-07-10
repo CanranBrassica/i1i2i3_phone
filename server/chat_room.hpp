@@ -1,11 +1,12 @@
 #pragma once
 
 #include "client_agent.hpp"
+#include "voice_chat.hpp"
 
 #include <message.hpp>
 
 #include <boost/asio.hpp>
-#include <unordered_set>
+#include <forward_list>
 #include <memory>
 
 
@@ -23,13 +24,15 @@ public:
     void join(const std::shared_ptr<ClientAgent>& client)
     {
         client->joinning_room = shared_from_this();
-        member.insert(client);
+        member.emplace_front(client);
     }
 
     void leave(const std::shared_ptr<ClientAgent>& client)
     {
-        client->joinning_room = nullptr;
-        member.erase(client);
+        client->joinning_room.reset();
+        member.remove_if([&client](const std::weak_ptr<ClientAgent>& c) {
+            return !c.expired() || c.lock() == client;
+        });
     }
 
     template <class TMessage, class F>
@@ -46,15 +49,19 @@ public:
 
         // 各client毎にasync_sendをするとdataがn個複製されてしまう
         for (auto& client : member) {
-            asio::async_write(
-                client->socket, asio::buffer(*data),
-                [client, on_send = std::forward<F>(on_send), data](auto&&... args) {
-                    on_send(client, std::forward<decltype(args)>(args)...);
-                });
+            if (!client.expired()) {
+                asio::async_write(
+                    client.lock()->socket, asio::buffer(*data),
+                    [client, on_send = std::forward<F>(on_send), data](auto&&... args) {
+                        on_send(client.lock(), std::forward<decltype(args)>(args)...);
+                    });
+            }
         }
     }
 
-    std::unordered_set<std::shared_ptr<ClientAgent>> member;
+private:
+    std::forward_list<std::weak_ptr<ClientAgent>> member;
+    std::shared_ptr<VoiceChatRoom> voice_room;
 };
 
 }  // namespace IpPhone
