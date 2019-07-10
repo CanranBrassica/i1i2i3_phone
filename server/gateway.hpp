@@ -43,6 +43,7 @@ public:
         }
         client_list.back()->id = id_registrator.registerNewId();
         client_list.back()->start_receive();
+        client_list.back()->async_send(Message::SetUserId{.user_id = client_list.back()->id.value()});
 
         start_accept();  // 次の接続要求を待つ
     }
@@ -76,6 +77,6 @@ private:
     std::vector<std::shared_ptr<ClientAgent>> client_list;
     std::unordered_map<size_t, std::shared_ptr<ChatRoom>> room_list;
 
-    IdRegistrator<size_t> id_registrator;
+    IdRegistrator<size_t> id_registrator = {1}; // 0はserver用
 };
 }  // namespace IpPhone

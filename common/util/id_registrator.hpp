@@ -6,8 +6,8 @@ namespace IpPhone
 template <class id_type>
 struct IdRegistrator
 {
-    IdRegistrator()
-        : m_current_id{id_type{0}} {}
+    IdRegistrator(id_type first_id = id_type{0})
+        : m_current_id{first_id} {}
 
     id_type registerNewId()
     {

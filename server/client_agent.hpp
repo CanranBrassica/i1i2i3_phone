@@ -2,6 +2,10 @@
 
 #include <boost/asio.hpp>
 #include <iostream>
+#include <cereal/cereal.hpp>
+#include <cereal/archives/binary.hpp>
+
+#include <message.hpp>
 
 namespace IpPhone
 {
@@ -20,9 +24,14 @@ public:
     explicit ClientAgent(asio::io_context& io_context, std::shared_ptr<GateWay> gateway);
 
     void start_receive();
-    void process_message(const std::string&& message);
     bool is_valid() const { return id.has_value(); }
     void close();
+
+    template <class TMessage, class F>
+    void add_callback(F&& func);
+
+    template <class TMessage>
+    void async_send(TMessage&& msg);
 
     tcp::socket socket;
     std::shared_ptr<GateWay> gateway;
@@ -31,9 +40,50 @@ public:
 
 private:
     asio::streambuf recv_buf;
-    std::unordered_map<std::string, std::function<void(const std::vector<std::string>&)>> command_list;
+    void exit();
+    bool join_room(size_t room_id);
+    void broadcast_message(const Message::TextMessage& msg);
 
     void on_receive(const boost::system::error_code& error, [[maybe_unused]] size_t length);
+
+    std::unordered_map<size_t, std::function<void()>> receive_callback;
 };
+
+template <class TMessage, class F>
+void ClientAgent::add_callback(F&& func)
+{
+    if (!receive_callback[TMessage::MessageId]) {
+        receive_callback[TMessage::MessageId] = [func = std::forward<F>(func), this] {
+            TMessage ret;
+            std::istream is{&recv_buf};
+            cereal::BinaryInputArchive ar{is};
+            ar(ret);
+            func(std::move(ret));
+        };
+    } else {
+        std::cout << "This id is already in use." << std::endl;
+    }
+}
+
+template <class TMessage>
+void ClientAgent::async_send(TMessage&& msg)
+{
+    std::stringstream ss;
+    {
+        cereal::BinaryOutputArchive ar{ss};
+        ar(TMessage::MessageId);
+        ar(msg);
+    }
+
+    auto data = std::make_shared<std::string>(std::move(ss.str() + Message::END_OF_MESSAGE));  // dataの寿命をasync_writeが全て終わるまで伸ばす
+
+    asio::async_write(
+        socket, asio::buffer(*data),
+        [](const boost::system::error_code& error, size_t len) {
+            if (error) {
+                std::cerr << "send failed: " << error.message() << std::endl;
+            }
+        });
+}
 
 }  // namespace IpPhone
