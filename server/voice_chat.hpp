@@ -1,10 +1,13 @@
 #pragma once
 
+#include "client_agent.hpp"
+
 namespace IpPhone
 {
 
-struct AbstQuery
+struct VoiceChatRoom
 {
+
 };
 
 }  // namespace IpPhone

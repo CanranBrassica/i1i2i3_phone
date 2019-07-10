@@ -1,7 +1,5 @@
 #include "gateway.hpp"
-//#include "voice.hpp"
 
-//#include "talk_room.hpp"
 
 int main(int argc, char* argv[])
 {
@@ -17,8 +15,6 @@ int main(int argc, char* argv[])
     asio::io_context io_context;
 
     auto gateway = std::make_shared<IpPhone::GateWay>(io_context, port);
-
-    //    IpPhone::Voice voice{io_context};
 
     gateway->start_accept();
 
