@@ -28,13 +28,6 @@ public:
           timer_(io_service),
           message_count_(0)
     {
-
-        socket_.set_option(
-            boost::asio::ip::multicast::join_group(
-
-                )
-            );
-
         std::ostringstream os;
         os << "Message " << message_count_++;
         message_ = os.str();
@@ -43,6 +36,8 @@ public:
             boost::asio::buffer(message_), endpoint_,
             boost::bind(&sender::handle_send_to, this,
                 boost::asio::placeholders::error));
+
+        std::cout << message_ << std::endl;
     }
 
     void handle_send_to(const boost::system::error_code& error)
@@ -66,6 +61,7 @@ public:
                 boost::asio::buffer(message_), endpoint_,
                 boost::bind(&sender::handle_send_to, this,
                     boost::asio::placeholders::error));
+            std::cout << message_ << std::endl;
         }
     }
 

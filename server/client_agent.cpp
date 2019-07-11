@@ -43,7 +43,16 @@ ClientAgent::ClientAgent(asio::io_context& io_context, GateWay& gateway)
     });
 
     add_callback<Message::TextMessage>([this](const Message::TextMessage& msg) {
-        this->broadcast_message(msg);
+        if (!joinning_room.expired()) {
+            joinning_room.lock()->tcp_multicast(msg,
+                [](const std::shared_ptr<ClientAgent>& client, const boost::system::error_code& error, size_t len) {
+                    if (error) {
+                        std::cerr << "broadcast failed: " << error.message() << std::endl;
+                    }
+                });
+        } else {
+            std::cerr << "not join room" << std::endl;
+        }
     });
 
     add_callback<Message::LeaveRoom>([this](const Message::LeaveRoom&) {
@@ -119,20 +128,6 @@ bool ClientAgent::join_room(size_t room_id)
         return true;
     }
     return false;
-}
-
-void ClientAgent::broadcast_message(const Message::TextMessage& msg)
-{
-    if (!joinning_room.expired()) {
-        joinning_room.lock()->broadcast(msg,
-            [](const std::shared_ptr<ClientAgent>& client, const boost::system::error_code& error, size_t len) {
-                if (error) {
-                    std::cerr << "broadcast failed: " << error.message() << std::endl;
-                }
-            });
-    } else {
-        std::cerr << "not join room" << std::endl;
-    }
 }
 
 }  // namespace IpPhone

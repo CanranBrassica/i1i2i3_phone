@@ -84,6 +84,15 @@ struct LeaveRoom
     {}
 };
 
+struct CallStart
+{
+    static inline constexpr MessageIdType MessageId = 6;
+
+    template <class TArchive>
+    void serialize(TArchive& ar)
+    {}
+};
+
 inline constexpr char END_OF_MESSAGE = -1;
 
 }  // namespace IpPhone::Message

@@ -43,7 +43,6 @@ private:
     asio::streambuf recv_buf;
     void exit();
     bool join_room(size_t room_id);
-    void broadcast_message(const Message::TextMessage& msg);
 
     void on_receive(const boost::system::error_code& error, [[maybe_unused]] size_t length);
 
