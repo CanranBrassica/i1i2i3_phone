@@ -59,28 +59,28 @@ public:
     }
 
 
-    template <class TMessage, class F>
-    void udp_multicast(TMessage&& msg, F&& on_send)
-    {
-        std::stringstream ss;
-        {
-            cereal::BinaryOutputArchive ar{ss};
-            ar(std::decay_t<TMessage>::MessageId);
-            ar(msg);
-        }
-
-        auto data = std::make_shared<std::string>(std::move(ss.str() + Message::END_OF_MESSAGE));  // dataの寿命をasync_writeが全て終わるまで伸ばす
-
-        multicast_socket.async_send_to(boost::asio::buffer(*data), multicast_endpoint, std::forward<F>(on_send));
-    }
+//    template <class TMessage, class F>
+//    void udp_multicast(TMessage&& msg, F&& on_send)
+//    {
+//        std::stringstream ss;
+//        {
+//            cereal::BinaryOutputArchive ar{ss};
+//            ar(std::decay_t<TMessage>::MessageId);
+//            ar(msg);
+//        }
+//
+//        auto data = std::make_shared<std::string>(std::move(ss.str() + Message::END_OF_MESSAGE));  // dataの寿命をasync_writeが全て終わるまで伸ばす
+//
+//        multicast_socket.async_send_to(boost::asio::buffer(*data), multicast_endpoint, std::forward<F>(on_send));
+//    }
 
 
 private:
     std::forward_list<std::weak_ptr<ClientAgent>> member;
 
-    using udp = boost::asio::ip::udp;
-    udp::socket multicast_socket;
-    udp::endpoint multicast_endpoint;
+//    using udp = boost::asio::ip::udp;
+//    udp::socket multicast_socket;
+//    udp::endpoint multicast_endpoint;
 };
 
 }  // namespace IpPhone

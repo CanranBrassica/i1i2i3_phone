@@ -29,7 +29,7 @@ int main(int argc, char* argv[])
 
     std::cout << "connection success" << std::endl;
 
-    auto send_message = [&](const auto& msg) {
+    auto tcp_send_message = [&](const auto& msg) {
         using TMessage = std::decay_t<decltype(msg)>;
 
         std::stringstream ss;
@@ -39,64 +39,63 @@ int main(int argc, char* argv[])
             ar(msg);
         }
 
-        boost::system::error_code error;
-        asio::write(socket, asio::buffer(ss.str() + IpPhone::Message::END_OF_MESSAGE), error);
-
         //        std::cout << "{";
         //        for (char c : ss.str()) {
         //            std::cout << +c << ", ";
         //        }
         //        std::cout << "}" << std::endl;
 
-        if (error) {
-            std::cerr << "send failed: " << error.message() << std::endl;
-        }
+        auto data = std::make_shared<std::string>(ss.str() + IpPhone::Message::END_OF_MESSAGE);
+
+        asio::async_write(
+            socket,
+            asio::buffer(*data),
+            [data](const boost::system::error_code& error, size_t length) {
+                if (error) {
+                    std::cerr << "send failed: " << error.message() << std::endl;
+                }
+            });
     };
 
     start_receive(socket);
 
     std::function<void()> read_line = [&] {
-        std::string message;
+        while (true) {
+            std::string message;
 
-        std::getline(std::cin, message);
-        bool exit_flag = (message.size() > 4 && message.substr(0, 5) == "/exit");
+            std::getline(std::cin, message);
+            bool exit_flag = (message.size() > 4 && message.substr(0, 5) == "/exit");
 
-        if (message[0] == '/') {
-            // command
-            std::vector<std::string> argv;
-            boost::algorithm::split(argv, message, boost::is_any_of(" ,"));
-            if (argv[0] == "/exit") {
-                send_message(IpPhone::Message::ExitMessage{});
-            } else if (argv[0] == "/create_room") {
-                send_message(IpPhone::Message::CreateRoom{.room_id = std::strtoul(argv[1].c_str(), nullptr, 0)});
-            } else if (argv[0] == "/join_room") {
-                send_message(IpPhone::Message::JoinRoom{.room_id = std::strtoul(argv[1].c_str(), nullptr, 0)});
-            } else if (argv[0] == "/leave_room") {
-                send_message(IpPhone::Message::LeaveRoom{});
+            if (message[0] == '/') {
+                // command
+                std::vector<std::string> argv;
+                boost::algorithm::split(argv, message, boost::is_any_of(" ,"));
+                if (argv[0] == "/exit") {
+                    tcp_send_message(IpPhone::Message::ExitMessage{});
+                } else if (argv[0] == "/create_room") {
+                    tcp_send_message(IpPhone::Message::CreateRoom{.room_id = std::strtoul(argv[1].c_str(), nullptr, 0)});
+                } else if (argv[0] == "/join_room") {
+                    tcp_send_message(IpPhone::Message::JoinRoom{.room_id = std::strtoul(argv[1].c_str(), nullptr, 0)});
+                } else if (argv[0] == "/leave_room") {
+                    tcp_send_message(IpPhone::Message::LeaveRoom{});
+                } else {
+                    std::cerr << "invalid command" << std::endl;
+                }
             } else {
-                std::cerr << "invalid command" << std::endl;
+                // ordinary message
+                tcp_send_message(IpPhone::Message::TextMessage{.talker_id = user_id, .data = std::move(message)});
             }
-        } else {
-            // ordinary message
-            send_message(IpPhone::Message::TextMessage{.talker_id = user_id, .data = message});
-        }
 
-        if (exit_flag) {
-            io_context.stop();
-            return;
+            if (exit_flag) {
+                io_context.stop();
+                return;
+            }
         }
-        io_context.post(read_line);
     };
 
-    io_context.post(read_line);
-
-    // read_lineがasio::writeでブロッキングするので，とりあえずio_contextを二本立てた
-    std::thread th{[&] {
-        io_context.run();
-    }};
+    std::thread{read_line}.detach();
 
     io_context.run();
-    th.join();
 
     socket.shutdown(tcp::socket::shutdown_send);
 
