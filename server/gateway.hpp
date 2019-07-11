@@ -39,9 +39,9 @@ public:
         if (error) {
             throw std::runtime_error{"accept failed!! error: " + error.message()};
         } else {
-            std::cout << "accept! id: " << id_registrator.peekNewId() << std::endl;
+            std::cout << "accept! id: " << client_id_registrator.peekNewId() << std::endl;
         }
-        client_list.back()->id = id_registrator.registerNewId();
+        client_list.back()->id = client_id_registrator.registerNewId();
         client_list.back()->start_receive();
         client_list.back()->async_send(Message::SetUserId{.user_id = client_list.back()->id.value()});
 
@@ -61,7 +61,7 @@ public:
     bool create_room(size_t id)
     {
         if (!room_list[id]) {
-            room_list[id] = std::make_shared<ChatRoom>();
+            room_list[id] = std::make_shared<ChatRoom>(io_context);
             std::cout << "new chat room. id: " << id << std::endl;
             return true;
         }
@@ -77,6 +77,7 @@ private:
     std::vector<std::shared_ptr<ClientAgent>> client_list;
     std::unordered_map<size_t, std::shared_ptr<ChatRoom>> room_list;
 
-    IdRegistrator<size_t> id_registrator = {1}; // 0はserver用
+    IdRegistrator<size_t> client_id_registrator = {1};  // 0はserver用
+    IdRegistrator<unsigned short> room_id_registrator = {4000};
 };
 }  // namespace IpPhone

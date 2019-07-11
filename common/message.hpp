@@ -32,7 +32,7 @@ struct ExitMessage
     static inline constexpr MessageIdType MessageId = 1;
 
     template <class TArchive>
-    void serialize(TArchive& ar)
+    void serialize(TArchive&)
     {}
 };
 
@@ -80,7 +80,7 @@ struct LeaveRoom
     static inline constexpr MessageIdType MessageId = 5;
 
     template <class TArchive>
-    void serialize(TArchive& ar)
+    void serialize(TArchive&)
     {}
 };
 
@@ -89,7 +89,7 @@ struct CallStart
     static inline constexpr MessageIdType MessageId = 6;
 
     template <class TArchive>
-    void serialize(TArchive& ar)
+    void serialize(TArchive&)
     {}
 };
 

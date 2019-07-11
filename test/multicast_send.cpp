@@ -15,19 +15,23 @@
 #include "boost/bind.hpp"
 #include "boost/date_time/posix_time/posix_time_types.hpp"
 
-const short multicast_port = 30001;
+const short multicast_port = 12345;
 const int max_message_count = 10;
 
 class sender
 {
 public:
     sender(boost::asio::io_service& io_service,
-        const boost::asio::ip::address& multicast_address)
+        const boost::asio::ip::address& multicast_address,
+        const boost::asio::ip::address_v4& network_interface)
         : endpoint_(multicast_address, multicast_port),
           socket_(io_service, endpoint_.protocol()),
           timer_(io_service),
           message_count_(0)
     {
+        socket_.set_option(boost::asio::ip::multicast::outbound_interface(network_interface));
+//        socket_.set_option(boost::asio::ip::multicast::enable_loopback(false));
+
         std::ostringstream os;
         os << "Message " << message_count_++;
         message_ = os.str();
@@ -76,8 +80,8 @@ private:
 int main(int argc, char* argv[])
 {
     try {
-        if (argc != 2) {
-            std::cerr << "Usage: sender <multicast_address>\n";
+        if (argc != 3) {
+            std::cerr << "Usage: sender <multicast_address> <network_interface>\n";
             std::cerr << "  For IPv4, try:\n";
             std::cerr << "    sender 239.255.0.1\n";
             std::cerr << "  For IPv6, try:\n";
@@ -86,7 +90,7 @@ int main(int argc, char* argv[])
         }
 
         boost::asio::io_service io_service;
-        sender s(io_service, boost::asio::ip::address::from_string(argv[1]));
+        sender s(io_service, boost::asio::ip::address::from_string(argv[1]), boost::asio::ip::address_v4::from_string(argv[2]));
         io_service.run();
     } catch (std::exception& e) {
         std::cerr << "Exception: " << e.what() << "\n";

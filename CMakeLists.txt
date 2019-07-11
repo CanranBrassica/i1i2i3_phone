@@ -5,7 +5,7 @@ project(i1i2i3_phone CXX)
 set(CMAKE_CXX_COMPILER "/usr/bin/g++-8")
 set(CMAKE_CXX_STANDARD 17)
 
-set(CMAKE_CXX_FLAGS "-g3 -O0")
+set(CMAKE_CXX_FLAGS "-g3 -O0 -Wall -Wextra")
 
 include_directories("${CMAKE_CURRENT_LIST_DIR}/cereal/include")
 

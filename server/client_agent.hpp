@@ -34,7 +34,7 @@ public:
     template <class TMessage>
     void async_send(TMessage&& msg);
 
-    tcp::socket socket;
+    tcp::socket socket;  // @todo tcpかudpかを隠蔽したいならここに書くべきでは無かった
     GateWay& gateway;
     std::optional<size_t> id = std::nullopt;
     std::weak_ptr<ChatRoom> joinning_room;
