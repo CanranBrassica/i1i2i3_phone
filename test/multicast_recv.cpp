@@ -26,8 +26,8 @@ public:
         // Create the socket so that multiple may be bound to the same address.
         boost::asio::ip::udp::endpoint listen_endpoint(
             boost::asio::ip::address_v4::any(), multicast_port);
-        //        boost::asio::ip::udp::endpoint listen_endpoint(
-        //            listen_address, multicast_port);
+//        boost::asio::ip::udp::endpoint listen_endpoint(
+//            listen_address, multicast_port);
 
         socket_.open(listen_endpoint.protocol());
         socket_.set_option(boost::asio::ip::udp::socket::reuse_address(true));

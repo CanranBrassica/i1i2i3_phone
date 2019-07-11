@@ -16,7 +16,7 @@
 #include "boost/date_time/posix_time/posix_time_types.hpp"
 
 const short multicast_port = 12345;
-const int max_message_count = 10;
+const int max_message_count = 1000;
 
 class sender
 {
@@ -30,7 +30,7 @@ public:
           message_count_(0)
     {
         socket_.set_option(boost::asio::ip::multicast::outbound_interface(network_interface));
-//        socket_.set_option(boost::asio::ip::multicast::enable_loopback(false));
+        socket_.set_option(boost::asio::ip::multicast::enable_loopback(true));
 
         std::ostringstream os;
         os << "Message " << message_count_++;
