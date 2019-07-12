@@ -2,11 +2,8 @@
 
 #include <string>
 #include <vector>
-#include <functional>
-
-#include <boost/hana.hpp>
-
 #include <cereal/types/string.hpp>
+#include <boost/asio.hpp>
 
 namespace IpPhone::Message
 {
@@ -84,7 +81,9 @@ struct LeaveRoom
     {}
 };
 
-struct CallStart
+// UDP Multicast通信に参加したいときにclientが送る
+// Multicast Configが返ってくるので，それを用いてUDP Multicast通信に参加する
+struct JoinMulticast
 {
     static inline constexpr MessageIdType MessageId = 6;
 
@@ -92,6 +91,30 @@ struct CallStart
     void serialize(TArchive&)
     {}
 };
+
+struct MulticastConfig
+{
+    static inline constexpr MessageIdType MessageId = 7;
+
+    std::string multicast_address;
+    unsigned short multicast_port;
+
+    template <class TArchive>
+    void serialize(TArchive& ar)
+    {
+        ar(multicast_address, multicast_port);
+    }
+};
+
+struct CallStart
+{
+    static inline constexpr MessageIdType MessageId = 8;
+
+    template <class TArchive>
+    void serialize(TArchive&)
+    {}
+};
+
 
 inline constexpr char END_OF_MESSAGE = -1;
 

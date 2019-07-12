@@ -26,6 +26,7 @@ foreach (test_src ${test_srcs})
     get_filename_component(target ${test_src} NAME_WE)
     add_executable(${target} ${test_src})
     target_link_libraries(${target} PRIVATE boost_system pthread)
+    target_include_directories(${target} PRIVATE ${CMAKE_CURRENT_LIST_DIR}/common)
 endforeach ()
 
 

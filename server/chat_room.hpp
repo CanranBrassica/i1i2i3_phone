@@ -80,11 +80,14 @@ public:
 
 
 private:
+
+    friend ClientAgent;
+
     std::forward_list<std::weak_ptr<ClientAgent>> member;
+    std::optional<std::tuple<boost::asio::ip::address_v4, unsigned short>> multicast_config;
 
     //    udp::socket multicast_socket;
     //    udp::endpoint multicast_endpoint;
-
     //    udp::socket receive_socket;
 };
 

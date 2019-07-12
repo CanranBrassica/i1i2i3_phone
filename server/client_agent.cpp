@@ -45,7 +45,7 @@ ClientAgent::ClientAgent(asio::io_context& io_context, GateWay& gateway)
     add_callback<Message::TextMessage>([this](const Message::TextMessage& msg) {
         if (!joinning_room.expired()) {
             joinning_room.lock()->tcp_multicast(msg,
-                [](const std::shared_ptr<ClientAgent>& client, const boost::system::error_code& error, size_t len) {
+                []([[maybe_unused]] const std::shared_ptr<ClientAgent>& client, const boost::system::error_code& error, [[maybe_unused]] size_t len) {
                     if (error) {
                         std::cerr << "broadcast failed: " << error.message() << std::endl;
                     }
@@ -58,6 +58,21 @@ ClientAgent::ClientAgent(asio::io_context& io_context, GateWay& gateway)
     add_callback<Message::LeaveRoom>([this](const Message::LeaveRoom&) {
         joinning_room.lock()->leave(shared_from_this());
         async_send(Message::TextMessage{.talker_id = 0, .data = "leave room"});
+    });
+
+    add_callback<Message::JoinMulticast>([this](const Message::JoinMulticast&) {
+        if (joinning_room.expired()) {
+            std::cerr << "not join room" << std::endl;
+            return;
+        }
+        auto jr = joinning_room.lock();
+        if (!jr->multicast_config.has_value()) {
+            jr->multicast_config = this->gateway.pay_out_multicast_config();
+        }
+
+        async_send(Message::MulticastConfig{
+            .multicast_address = std::get<0>(*jr->multicast_config).to_string(),
+            .multicast_port = std::get<1>(*jr->multicast_config)});
     });
 }
 
@@ -72,7 +87,7 @@ void ClientAgent::start_receive()
         [self = shared_from_this()](auto&&... args) { self->on_receive(std::forward<decltype(args)>(args)...); });
 }
 
-void ClientAgent::on_receive(const boost::system::error_code& error, const size_t length)
+void ClientAgent::on_receive(const boost::system::error_code& error, [[maybe_unused]] const size_t length)
 {
     if (!is_valid()) {
         return;  // invalidであれば処理せずに無視
@@ -84,22 +99,13 @@ void ClientAgent::on_receive(const boost::system::error_code& error, const size_
         throw std::runtime_error{"client receive failed!! error: " + error.message()};
     }
 
-    //    {
-    //        const std::string str{asio::buffer_cast<const char*>(recv_buf.data()), recv_buf.size()};
-    //        std::cout << "{";
-    //        for (char c : str) {
-    //            std::cout << +c << ", ";
-    //        }
-    //        std::cout << "}" << std::endl;
-    //    }
-
     std::istream is{&recv_buf};
     Message::MessageIdType id;
     cereal::BinaryInputArchive ar{is};
     ar(id);
     assert(receive_callback[id]);
     receive_callback[id]();
-    recv_buf.consume(1);  // for END_OF_MESSAGE
+    recv_buf.consume(sizeof(Message::END_OF_MESSAGE));  // for END_OF_MESSAGE
 
     start_receive();
 }

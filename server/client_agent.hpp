@@ -19,6 +19,7 @@ namespace asio = boost::asio;
 class ClientAgent : public std::enable_shared_from_this<ClientAgent>
 {
     using tcp = asio::ip::tcp;
+    using udp = asio::ip::udp;
 
 public:
     explicit ClientAgent(asio::io_context& io_context, GateWay& gateway);
@@ -47,6 +48,7 @@ private:
     void on_receive(const boost::system::error_code& error, [[maybe_unused]] size_t length);
 
     std::unordered_map<size_t, std::function<void()>> receive_callback;
+
 };
 
 template <class TMessage, class F>
@@ -79,7 +81,7 @@ void ClientAgent::async_send(TMessage&& msg)
 
     asio::async_write(
         socket, asio::buffer(*data),
-        [](const boost::system::error_code& error, size_t len) {
+        [](const boost::system::error_code& error, [[maybe_unused]] size_t len) {
             if (error) {
                 std::cerr << "send failed: " << error.message() << std::endl;
             }

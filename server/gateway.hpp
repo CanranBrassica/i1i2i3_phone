@@ -68,6 +68,11 @@ public:
         return false;
     }
 
+    std::tuple<boost::asio::ip::address_v4, unsigned short> pay_out_multicast_config()
+    {
+        return std::make_tuple(multicast_address, room_id_registrator.registerNewId());
+    }
+
 
 private:
     friend ClientAgent;
@@ -78,6 +83,8 @@ private:
     std::unordered_map<size_t, std::shared_ptr<ChatRoom>> room_list;
 
     IdRegistrator<size_t> client_id_registrator = {1};  // 0はserver用
-    IdRegistrator<unsigned short> room_id_registrator = {4000};
+
+    boost::asio::ip::address_v4 multicast_address = boost::asio::ip::address_v4::from_string("229.0.0.1");  // ベタ打ち許して
+    IdRegistrator<unsigned short> room_id_registrator = {50000};                                            // ポートは50000から初めてインクリメント
 };
 }  // namespace IpPhone
