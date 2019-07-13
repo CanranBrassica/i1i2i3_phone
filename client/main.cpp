@@ -86,7 +86,10 @@ int main(int argc, char* argv[])
                                             .talker_id = user_id, .data = std::forward<decltype(buf)>(buf), .length = len});
                                 });
                             });
+                        tcp_connection.send(IpPhone::Message::CallStart{.talker_id = user_id});
                         std::cout << "sound recoder start" << std::endl;
+                    } else {
+                        std::cout << "please start multicast" << std::endl;
                     }
                 } else if (argv[0] == "/leave_call") {
                     sound_recoder.reset();
@@ -174,7 +177,10 @@ void add_recv_callback(IpPhone::UdpMulticastMessage& con)
 
     con.add_callback<PhoneData>(
         [](const PhoneData& data) {
-            if (!sound_recoder || user_id != data.talker_id) {
+            if (!sound_recoder) {
+                return;
+            }
+            if (user_id != data.talker_id) {
                 if (!sound_player[data.talker_id]) {
                     sound_player[data.talker_id] = std::make_unique<IpPhone::SoundPlayer>(IpPhone::SoxConfig{});
                 }

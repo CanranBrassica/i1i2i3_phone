@@ -75,6 +75,21 @@ ClientAgent::ClientAgent(asio::io_context& io_context, GateWay& gateway)
             .multicast_port = std::get<1>(*jr->multicast_config)});
     });
 
+    add_callback<Message::CallStart>([this](const Message::CallStart& msg) {
+        if (joinning_room.expired()) {
+            async_send(Message::TextMessage{.talker_id = 0, .data = "not join room."});
+            return;
+        }
+        auto jr = joinning_room.lock();
+        joinning_room.lock()->tcp_multicast(
+            Message::TextMessage{.talker_id = 0, .data = "user"s + std::to_string(msg.talker_id) + " join voice call."s},
+            []([[maybe_unused]] const std::shared_ptr<ClientAgent>& client, const boost::system::error_code& error, [[maybe_unused]] size_t len) {
+                if (error) {
+                    std::cerr << "broadcast failed: " << error.message() << std::endl;
+                }
+            });
+    });
+
     add_callback<Message::PrintRoomListRequest>([this](auto) {
         std::stringstream ss;
         if (this->gateway.room_list.empty()) {

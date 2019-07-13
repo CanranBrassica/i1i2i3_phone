@@ -111,9 +111,13 @@ struct CallStart
 {
     static inline constexpr MessageIdType MessageId = 8;
 
+    size_t talker_id;
+
     template <class TArchive>
-    void serialize(TArchive&)
-    {}
+    void serialize(TArchive& ar)
+    {
+        ar(talker_id);
+    }
 };
 
 struct PhoneData
