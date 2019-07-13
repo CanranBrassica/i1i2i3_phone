@@ -119,7 +119,7 @@ struct CallStart
 struct PhoneData
 {
     static inline constexpr MessageIdType MessageId = 9;
-    static inline constexpr size_t DataSize = 256;
+    static inline constexpr size_t DataSize = 64;
 
     size_t talker_id;
     std::array<char, DataSize> data;

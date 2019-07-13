@@ -4,6 +4,7 @@
 #include <sstream>
 #include <atomic>
 #include <thread>
+#include <mutex>
 
 namespace IpPhone
 {
@@ -59,7 +60,7 @@ struct SoundPlayer
 
 struct SoundRecoder
 {
-    static constexpr size_t buf_size = 256;
+    static constexpr size_t buf_size = 64;
 
     template <class F>
     explicit SoundRecoder(const SoxConfig& sox_config, F&& rec_callback)
