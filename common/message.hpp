@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <cereal/types/string.hpp>
+#include <cereal/types/array.hpp>
 #include <boost/asio.hpp>
 
 namespace IpPhone::Message
@@ -113,6 +114,22 @@ struct CallStart
     template <class TArchive>
     void serialize(TArchive&)
     {}
+};
+
+struct PhoneData
+{
+    static inline constexpr MessageIdType MessageId = 9;
+    static inline constexpr size_t DataSize = 1024;
+
+    size_t talker_id;
+    std::array<char, DataSize> data;
+    size_t length;
+
+    template <class TArchive>
+    void serialize(TArchive& ar)
+    {
+        ar(talker_id, data, length);
+    }
 };
 
 

@@ -1,5 +1,6 @@
 #include "tcp_message.hpp"
 #include "udp_multicast.hpp"
+#include "sound.hpp"
 
 #include <message.hpp>
 
@@ -11,6 +12,8 @@
 
 size_t user_id;  // サーバーに接続すると割り振られる．
 std::shared_ptr<IpPhone::UdpMulticastMessage> udp_multicast_message;
+std::unordered_map<size_t, std::unique_ptr<IpPhone::SoundPlayer>> sound_player;  // user_id と player
+std::unique_ptr<IpPhone::SoundRecoder> sound_recoder;
 
 void add_recv_callback(IpPhone::TcpConnection& con);
 void add_recv_callback(IpPhone::UdpMulticastMessage& con);
@@ -62,6 +65,20 @@ int main(int argc, char* argv[])
                     tcp_connection.send(IpPhone::Message::JoinMulticast{});
                 } else if (argv[0] == "/leave_multicast") {
                     udp_multicast_message.reset();
+                } else if (argv[0] == "/start_call") {
+                    if (udp_multicast_message) {
+                        sound_recoder = std::make_unique<IpPhone::SoundRecoder>(
+                            IpPhone::SoxConfig{},
+                            [](auto&& buf, size_t len) mutable {
+                                udp_multicast_message->send(
+                                    IpPhone::Message::PhoneData{
+                                        .talker_id = user_id, .data = std::forward<decltype(buf)>(buf), .length = len});
+                            });
+                        std::cout << "sound recoder start" << std::endl;
+                    }
+                } else if (argv[0] == "/stop_call") {
+                    sound_recoder.reset();
+                    sound_player.clear();
                 } else if (argv[0] == "/multicast_message") {
                     if (udp_multicast_message) {
                         udp_multicast_message->send(IpPhone::Message::TextMessage{.talker_id = user_id, .data = argv[1]});
@@ -127,12 +144,22 @@ void add_recv_callback(IpPhone::TcpConnection& con)
 
 void add_recv_callback(IpPhone::UdpMulticastMessage& con)
 {
-    con.add_callback<IpPhone::Message::TextMessage>(
-        [](const IpPhone::Message::TextMessage& msg) {
+    using namespace IpPhone::Message;
+    con.add_callback<TextMessage>(
+        [](const TextMessage& msg) {
             if (msg.talker_id == 0) {
                 std::cout << "[multicast] server: " << msg.data << std::endl;
             } else if (user_id != msg.talker_id) {
                 std::cout << "[multicast] user" << msg.talker_id << ": " << msg.data << std::endl;
+            }
+        });
+    con.add_callback<PhoneData>(
+        [](const PhoneData& data) {
+            if (user_id != data.talker_id) {
+                if (!sound_player[data.talker_id]) {
+                    sound_player[data.talker_id] = std::make_unique<IpPhone::SoundPlayer>(IpPhone::SoxConfig{});
+                }
+                sound_player[data.talker_id]->play(data.data, data.length);
             }
         });
 }
