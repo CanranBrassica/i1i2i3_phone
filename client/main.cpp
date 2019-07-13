@@ -10,6 +10,9 @@
 #include <cereal/archives/binary.hpp>
 #include <boost/algorithm/string.hpp>
 
+
+boost::asio::io_context io_context;
+
 size_t user_id;  // サーバーに接続すると割り振られる．
 std::shared_ptr<IpPhone::UdpMulticastMessage> udp_multicast_message;
 std::unordered_map<size_t, std::unique_ptr<IpPhone::SoundPlayer>> sound_player;  // user_id と player
@@ -28,7 +31,6 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    asio::io_context io_context;
     tcp::socket socket{io_context};
 
     IpPhone::TcpConnection tcp_connection{
@@ -130,7 +132,7 @@ void add_recv_callback(IpPhone::TcpConnection& con)
             if (!udp_multicast_message) {
                 std::cout << "start udp multicast. " << msg.multicast_address << ":" << msg.multicast_port << std::endl;
                 udp_multicast_message = std::make_shared<IpPhone::UdpMulticastMessage>(
-                    con.socket.get_io_context(),
+                    io_context,
                     boost::asio::ip::address_v4::from_string(msg.multicast_address),
                     msg.multicast_port,
                     boost::asio::ip::address_v4::from_string("0.0.0.0"));
