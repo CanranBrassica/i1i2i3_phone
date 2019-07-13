@@ -58,9 +58,17 @@ int main(int argc, char* argv[])
                 if (argv[0] == "/exit") {
                     tcp_connection.send(IpPhone::Message::ExitMessage{});
                 } else if (argv[0] == "/create_room") {
-                    tcp_connection.send(IpPhone::Message::CreateRoom{.room_id = std::strtoul(argv[1].c_str(), nullptr, 0)});
+                    if (argv.size() >= 2) {
+                        tcp_connection.send(IpPhone::Message::CreateRoom{.room_id = std::strtoul(argv[1].c_str(), nullptr, 0)});
+                    } else {
+                        std::cerr << "invalid argument. /create_room [room_id]" << std::endl;
+                    }
                 } else if (argv[0] == "/join_room") {
-                    tcp_connection.send(IpPhone::Message::JoinRoom{.room_id = std::strtoul(argv[1].c_str(), nullptr, 0)});
+                    if (argv.size() >= 2) {
+                        tcp_connection.send(IpPhone::Message::JoinRoom{.room_id = std::strtoul(argv[1].c_str(), nullptr, 0)});
+                    } else {
+                        std::cerr << "invalid argument. /join_room [room_id]" << std::endl;
+                    }
                 } else if (argv[0] == "/leave_room") {
                     tcp_connection.send(IpPhone::Message::LeaveRoom{});
                 } else if (argv[0] == "/join_multicast") {
@@ -71,10 +79,13 @@ int main(int argc, char* argv[])
                     if (udp_multicast_message) {
                         sound_recoder = std::make_unique<IpPhone::SoundRecoder>(
                             IpPhone::SoxConfig{},
-                            [](auto&& buf, size_t len) mutable {
-                                udp_multicast_message->send(
-                                    IpPhone::Message::PhoneData{
-                                        .talker_id = user_id, .data = std::forward<decltype(buf)>(buf), .length = len});
+                            [](auto buf, size_t len) mutable {
+//                                std::cout << "phone send" << std::endl;
+                                io_context.post([buf = std::move(buf), len] {
+                                    udp_multicast_message->send(
+                                        IpPhone::Message::PhoneData{
+                                            .talker_id = user_id, .data = std::forward<decltype(buf)>(buf), .length = len});
+                                });
                             });
                         std::cout << "sound recoder start" << std::endl;
                     }
@@ -83,7 +94,9 @@ int main(int argc, char* argv[])
                     sound_player.clear();
                 } else if (argv[0] == "/multicast_message") {
                     if (udp_multicast_message) {
-                        udp_multicast_message->send(IpPhone::Message::TextMessage{.talker_id = user_id, .data = argv[1]});
+                        for (size_t i = 0; i < 10; ++i) {
+                            udp_multicast_message->send(IpPhone::Message::TextMessage{.talker_id = user_id, .data = argv[1]});
+                        }
                     }
                 } else {
                     std::cerr << "invalid command" << std::endl;
@@ -136,8 +149,10 @@ void add_recv_callback(IpPhone::TcpConnection& con)
                     boost::asio::ip::address_v4::from_string(msg.multicast_address),
                     msg.multicast_port,
                     boost::asio::ip::address_v4::from_string("0.0.0.0"));
-                udp_multicast_message->start_receive();
+
                 add_recv_callback(*udp_multicast_message);
+
+                udp_multicast_message->start_receive();
             } else {
                 std::cout << "already start udp multicast" << std::endl;
             }
@@ -155,8 +170,10 @@ void add_recv_callback(IpPhone::UdpMulticastMessage& con)
                 std::cout << "[multicast] user" << msg.talker_id << ": " << msg.data << std::endl;
             }
         });
+
     con.add_callback<PhoneData>(
         [](const PhoneData& data) {
+//            std::cout << "phone recv" << std::endl;
             if (user_id != data.talker_id) {
                 if (!sound_player[data.talker_id]) {
                     sound_player[data.talker_id] = std::make_unique<IpPhone::SoundPlayer>(IpPhone::SoxConfig{});

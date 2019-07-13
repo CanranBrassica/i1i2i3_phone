@@ -31,7 +31,7 @@ struct UdpMulticastMessage : public std::enable_shared_from_this<UdpMulticastMes
         send_socket.set_option(boost::asio::ip::multicast::outbound_interface(network_interface));
         send_socket.set_option(boost::asio::ip::multicast::enable_loopback(true));
 
-//        start_receive();
+        //        start_receive();
     }
 
     void start_receive()
@@ -41,8 +41,9 @@ struct UdpMulticastMessage : public std::enable_shared_from_this<UdpMulticastMes
             boost::asio::buffer(*buf), sender_endpoint,
             [weak_self = std::weak_ptr{shared_from_this()}, buf](boost::system::error_code ec, std::size_t length) {
                 if (!weak_self.expired()) {
-                    weak_self.lock()->s_buf.sputn(buf->data(), length);
-                    weak_self.lock()->on_recv(ec, length);
+                    std::lock_guard{weak_self.lock()->s_buf_mtx};
+                    weak_self.lock()->s_buf.sputn(buf->data(), length);  // bufに書き込み
+                    weak_self.lock()->on_recv(ec, length);               // 受信処理
                 }
             });
     }
@@ -55,16 +56,20 @@ struct UdpMulticastMessage : public std::enable_shared_from_this<UdpMulticastMes
             throw std::runtime_error{"client receive failed!! error: " + ec.message()};
         }
 
-        while (s_buf.size() > 0) {
-            Message::MessageIdType id;
 
-            std::istream is{&s_buf};
-            cereal::BinaryInputArchive ar{is};
-            ar(id);
+        {
+            std::lock_guard{s_buf_mtx};
+            while (s_buf.size() > 0) {
+                Message::MessageIdType id;
 
-            assert(receive_callback[id]);
-            receive_callback[id]();
-            s_buf.consume(1);
+                std::istream is{&s_buf};
+                cereal::BinaryInputArchive ar{is};
+                ar(id);
+
+                assert(receive_callback[id]);
+                receive_callback[id]();
+                s_buf.consume(1);
+            }
         }
 
         start_receive();
@@ -75,6 +80,7 @@ struct UdpMulticastMessage : public std::enable_shared_from_this<UdpMulticastMes
     {
         if (!receive_callback[TMessage::MessageId]) {
             receive_callback[TMessage::MessageId] = [func = std::forward<F>(func), this] {
+                std::lock_guard lock{s_buf_mtx};
                 TMessage ret;
                 std::istream is{&s_buf};
                 cereal::BinaryInputArchive ar{is};
@@ -117,6 +123,7 @@ struct UdpMulticastMessage : public std::enable_shared_from_this<UdpMulticastMes
     std::unordered_map<IpPhone::Message::MessageIdType, std::function<void()>> receive_callback;
 
 private:
+    std::mutex s_buf_mtx;
     boost::asio::streambuf s_buf;
 };
 

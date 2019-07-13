@@ -33,6 +33,7 @@ struct SoundPlayer
 {
     explicit SoundPlayer(const SoxConfig& sox_config)
     {
+        std::lock_guard lock{mtx};
         play_process = popen(sox_config.play_command().c_str(), "w");
         if (!play_process) {
             throw std::runtime_error{"cannot open play process"};
@@ -41,21 +42,24 @@ struct SoundPlayer
 
     ~SoundPlayer()
     {
+        std::lock_guard lock{mtx};
         pclose(play_process);
     }
 
     template <size_t N>
     void play(std::array<char, N> buf, size_t length)
     {
+        std::lock_guard lock{mtx};
         fwrite(buf.data(), sizeof(char), length, play_process);
     }
 
+    std::mutex mtx;
     FILE* play_process;
 };
 
 struct SoundRecoder
 {
-    static constexpr size_t buf_size = 1024;
+    static constexpr size_t buf_size = 256;
 
     template <class F>
     explicit SoundRecoder(const SoxConfig& sox_config, F&& rec_callback)
