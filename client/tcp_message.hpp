@@ -10,8 +10,16 @@ namespace IpPhone
 {
 struct TcpConnection
 {
-
     using tcp = boost::asio::ip::tcp;
+
+    TcpConnection(boost::asio::ip::tcp::socket& socket,
+                  const boost::asio::ip::address_v4& server_address,
+                  unsigned short server_port)
+        : socket{socket}
+    {
+        socket.connect(tcp::endpoint(server_address, server_port));
+    }
+
 
     template <class T>
     void send(const T& msg)
@@ -79,15 +87,6 @@ struct TcpConnection
         }
 
         return 0;
-    }
-
-    TcpConnection(boost::asio::ip::tcp::socket& socket,
-        const boost::asio::ip::address_v4& server_address,
-        unsigned short server_port)
-        : socket{socket}
-    {
-        socket.connect(tcp::endpoint(server_address, server_port));
-        start_receive();
     }
 
     boost::asio::ip::tcp::socket& socket;

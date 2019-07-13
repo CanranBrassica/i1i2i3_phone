@@ -33,6 +33,8 @@ int main(int argc, char* argv[])
         asio::ip::address_v4::from_string(argv[1]),
         (unsigned short)std::atoi(argv[2])};
 
+    tcp_connection.start_receive();
+
     std::cout << "connection success" << std::endl;
 
     add_recv_callback(tcp_connection);
