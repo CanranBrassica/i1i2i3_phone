@@ -20,7 +20,7 @@ class ChatRoom : public std::enable_shared_from_this<ChatRoom>
     using udp = boost::asio::ip::udp;
 
 public:
-    ChatRoom(asio::io_context& io_context) {}
+    ChatRoom() = default;
     //    ChatRoom(asio::io_context& io_context, const udp::endpoint& udp_receive_endpoint)
     //        : receive_socket{io_context}
     //    {
@@ -78,8 +78,6 @@ public:
         auto data = std::make_shared<std::string>(std::move(ss.str() + Message::END_OF_MESSAGE));  // dataの寿命をasync_writeが全て終わるまで伸ばす
     }
 
-
-private:
 
     friend ClientAgent;
 

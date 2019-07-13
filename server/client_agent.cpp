@@ -74,6 +74,23 @@ ClientAgent::ClientAgent(asio::io_context& io_context, GateWay& gateway)
             .multicast_address = std::get<0>(*jr->multicast_config).to_string(),
             .multicast_port = std::get<1>(*jr->multicast_config)});
     });
+
+    add_callback<Message::PrintRoomListRequest>([this](auto) {
+        std::stringstream ss;
+        if (this->gateway.room_list.empty()) {
+            ss << "no room";
+        }
+        for (const auto& room : this->gateway.room_list) {
+            ss << "room_id: " << room.first << "\n";
+            if (room.second->member.empty()) {
+                ss << "\t no user";
+            }
+            for (const auto& mem : room.second->member) {
+                ss << "\tuser_id: " << mem.lock()->id.value() << "\n";
+            }
+        }
+        async_send(Message::TextMessage{.talker_id = 0, .data = ss.str()});
+    });
 }
 
 void ClientAgent::start_receive()

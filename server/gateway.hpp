@@ -61,7 +61,7 @@ public:
     bool create_room(size_t id)
     {
         if (!room_list[id]) {
-            room_list[id] = std::make_shared<ChatRoom>(io_context);
+            room_list[id] = std::make_shared<ChatRoom>();
             std::cout << "new chat room. id: " << id << std::endl;
             return true;
         }

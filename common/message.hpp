@@ -119,7 +119,7 @@ struct CallStart
 struct PhoneData
 {
     static inline constexpr MessageIdType MessageId = 9;
-    static inline constexpr size_t DataSize = 64;
+    static inline constexpr size_t DataSize = 1024;
 
     size_t talker_id;
     std::array<char, DataSize> data;
@@ -132,6 +132,10 @@ struct PhoneData
     }
 };
 
+struct PrintRoomListRequest
+{
+    static inline constexpr MessageIdType MessageId = 10;
+};
 
 inline constexpr char END_OF_MESSAGE = -1;
 

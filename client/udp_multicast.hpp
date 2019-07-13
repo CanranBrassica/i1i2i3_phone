@@ -36,7 +36,7 @@ struct UdpMulticastMessage : public std::enable_shared_from_this<UdpMulticastMes
 
     void start_receive()
     {
-        auto buf = std::make_shared<std::array<char, 1024>>();
+        auto buf = std::make_shared<std::array<char, 8192>>();
         recv_socket.async_receive_from(
             boost::asio::buffer(*buf), sender_endpoint,
             [weak_self = std::weak_ptr{shared_from_this()}, buf](boost::system::error_code ec, std::size_t length) {
@@ -68,7 +68,6 @@ struct UdpMulticastMessage : public std::enable_shared_from_this<UdpMulticastMes
 
                 assert(receive_callback[id]);
                 receive_callback[id]();
-                s_buf.consume(1);
             }
         }
 
@@ -86,6 +85,7 @@ struct UdpMulticastMessage : public std::enable_shared_from_this<UdpMulticastMes
                 cereal::BinaryInputArchive ar{is};
                 ar(ret);
                 func(std::move(ret));
+                s_buf.consume(1);
             };
         } else {
             std::cout << "This id is already in use." << std::endl;

@@ -71,16 +71,15 @@ int main(int argc, char* argv[])
                     }
                 } else if (argv[0] == "/leave_room") {
                     tcp_connection.send(IpPhone::Message::LeaveRoom{});
-                } else if (argv[0] == "/join_multicast") {
+                } else if (argv[0] == "/start_multicast") {
                     tcp_connection.send(IpPhone::Message::JoinMulticast{});
                 } else if (argv[0] == "/leave_multicast") {
                     udp_multicast_message.reset();
-                } else if (argv[0] == "/start_call") {
+                } else if (argv[0] == "/join_call") {
                     if (udp_multicast_message) {
                         sound_recoder = std::make_unique<IpPhone::SoundRecoder>(
                             IpPhone::SoxConfig{},
                             [](auto buf, size_t len) mutable {
-//                                std::cout << "phone send" << std::endl;
                                 io_context.post([buf = std::move(buf), len] {
                                     udp_multicast_message->send(
                                         IpPhone::Message::PhoneData{
@@ -89,15 +88,17 @@ int main(int argc, char* argv[])
                             });
                         std::cout << "sound recoder start" << std::endl;
                     }
-                } else if (argv[0] == "/stop_call") {
+                } else if (argv[0] == "/leave_call") {
                     sound_recoder.reset();
                     sound_player.clear();
-                } else if (argv[0] == "/multicast_message") {
+                } else if (argv[0] == "/multi_msg_test") {
                     if (udp_multicast_message) {
                         for (size_t i = 0; i < 10; ++i) {
                             udp_multicast_message->send(IpPhone::Message::TextMessage{.talker_id = user_id, .data = argv[1]});
                         }
                     }
+                } else if (argv[0] == "/room_list") {
+                    tcp_connection.send(IpPhone::Message::PrintRoomListRequest{});
                 } else {
                     std::cerr << "invalid command" << std::endl;
                 }
@@ -173,8 +174,7 @@ void add_recv_callback(IpPhone::UdpMulticastMessage& con)
 
     con.add_callback<PhoneData>(
         [](const PhoneData& data) {
-//            std::cout << "phone recv" << std::endl;
-            if (user_id != data.talker_id) {
+            if (!sound_recoder || user_id != data.talker_id) {
                 if (!sound_player[data.talker_id]) {
                     sound_player[data.talker_id] = std::make_unique<IpPhone::SoundPlayer>(IpPhone::SoxConfig{});
                 }
