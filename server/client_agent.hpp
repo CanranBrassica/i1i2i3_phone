@@ -48,7 +48,6 @@ private:
     void on_receive(const boost::system::error_code& error, [[maybe_unused]] size_t length);
 
     std::unordered_map<size_t, std::function<void()>> receive_callback;
-
 };
 
 template <class TMessage, class F>
@@ -70,6 +69,7 @@ void ClientAgent::add_callback(F&& func)
 template <class TMessage>
 void ClientAgent::async_send(TMessage&& msg)
 {
+
     std::stringstream ss;
     {
         cereal::BinaryOutputArchive ar{ss};

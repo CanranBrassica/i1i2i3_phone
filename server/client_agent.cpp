@@ -131,13 +131,20 @@ void ClientAgent::on_receive(const boost::system::error_code& error, [[maybe_unu
         throw std::runtime_error{"client receive failed!! error: " + error.message()};
     }
 
-    std::istream is{&recv_buf};
-    Message::MessageIdType id;
-    cereal::BinaryInputArchive ar{is};
-    ar(id);
-    assert(receive_callback[id]);
-    receive_callback[id]();
-    recv_buf.consume(sizeof(Message::END_OF_MESSAGE));  // for END_OF_MESSAGE
+    try {
+        std::istream is{&recv_buf};
+        Message::MessageIdType id;
+        cereal::BinaryInputArchive ar{is};
+        ar(id);
+        assert(receive_callback[id]);
+        receive_callback[id]();
+        recv_buf.consume(sizeof(Message::END_OF_MESSAGE));  // for END_OF_MESSAGE
+    } catch (cereal::Exception& e) {
+        std::cerr << "[cereal::Exception] " << e.what() << std::endl;
+        std::cerr << "reject client " << id.value() << std::endl;
+        exit();
+        return;
+    }
 
     start_receive();
 }
